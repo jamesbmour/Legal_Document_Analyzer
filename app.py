@@ -9,6 +9,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langchain_ollama import ChatOllama
+from langchain_docling.loader import DoclingLoader
 
 #%%
 ################################ Configuration & Setup ################################
@@ -16,9 +17,9 @@ from langchain_ollama import ChatOllama
 load_dotenv()
 
 # Streamlit's file watcher can trip over torch.classes if it is present in the
-# environment; remove any eagerly imported torch modules so the watcher skips it.
-for _mod in [m for m in list(sys.modules) if m.startswith("torch")]:
-    sys.modules.pop(_mod, None)
+# # environment; remove any eagerly imported torch modules so the watcher skips it.
+# for _mod in [m for m in list(sys.modules) if m.startswith("torch")]:
+#     sys.modules.pop(_mod, None)
 
 # Define model parameters and connection strings
 llm_model = "gpt-oss:20b"  # Using a lightweight model
@@ -35,14 +36,7 @@ def call_ollama(prompt: str, temperature: float = 0.2) -> str:
         temperature=temperature,
     )
     response = llm.invoke(prompt)
-    if hasattr(response, "content"):
-        content = response.content
-    elif isinstance(response, str):
-        content = response
-    else:
-        content = ""
-    if not content:
-        raise RuntimeError("Empty response returned from Ollama.")
+    content = response.content
     return content.strip()
 
 
