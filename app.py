@@ -45,10 +45,10 @@ def call_ollama(prompt: str, temperature: float = 0.2) -> str:
         messages=[{"role": "user", "content": prompt}],
         options={"temperature": temperature},
     )
-    content = response.get("message", {}).get("content", "")
-    if not content:
+    if content := response.get("message", {}).get("content", ""):
+        return content.strip()
+    else:
         raise RuntimeError("Empty response returned from Ollama.")
-    return content.strip()
 
 
 def clamp_text(text: str) -> str:
