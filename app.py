@@ -180,7 +180,7 @@ def analyze_document(doc_text):
     """
     app = create_workflow()
     initial_state = {"original_text": doc_text}
-    
+
     # Execute the graph workflow
     try:
         result = app.invoke(initial_state)
@@ -190,10 +190,28 @@ def analyze_document(doc_text):
 
     st.markdown("## 📊 Analysis Report")
 
-    # Render the final markdown report in the UI
-    with st.container():
+    # Present results in dedicated tabs instead of a single block
+    summary_tab, risks_tab, suggestions_tab = st.tabs(
+        ["Summary", "Risks", "Suggestions"]
+    )
+    with summary_tab:
+        st.markdown("### 📝 Document Summary")
         st.markdown(
-            f"<div class='report-box'>{result['final_report']}</div>",
+            f"<div class='report-box'>{result['summary']}</div>",
+            unsafe_allow_html=True,
+        )
+
+    with risks_tab:
+        st.markdown("### ⚠️ Identified Risks")
+        st.markdown(
+            f"<div class='report-box'>{result['risks']}</div>",
+            unsafe_allow_html=True,
+        )
+
+    with suggestions_tab:
+        st.markdown("### 💡 Suggestions for Improvement")
+        st.markdown(
+            f"<div class='report-box'>{result['suggestions']}</div>",
             unsafe_allow_html=True,
         )
 
