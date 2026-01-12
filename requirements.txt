@@ -1,10 +1,11 @@
 streamlit
 langchain
 langchain-ollama
+langchain-openai
 langchain-community
-langgraph>=0.0.40
-python-dotenv>=1.0.0
-openai>=1.0.0
+langgraph
+python-dotenv
+openai
 pypdf2>=3.0.0
 python-docx>=0.8.11
 pytesseract>=0.3.10
@@ -15,3 +16,5 @@ requests>=2.28.0
 typing-extensions>=4.5.0
 langchain-docling
 docling
+opencv-python
+

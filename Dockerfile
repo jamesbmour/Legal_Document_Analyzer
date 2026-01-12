@@ -7,8 +7,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+
+RUN pip install --upgrade pip
 # Ensure requirements.txt has a recent Streamlit (e.g., streamlit>=1.35,<2)
 RUN pip install --no-cache-dir -r requirements.txt
+
+RUN docling-tools models download
 
 COPY . .
 
