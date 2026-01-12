@@ -1,25 +1,21 @@
 import os
-import sys
 import tempfile
 from textwrap import dedent
 from typing import TypedDict
 
-import pdfplumber
 import streamlit as st
 from dotenv import load_dotenv
-from langgraph.graph import StateGraph, END
+from docling.document_converter import DocumentConverter
+from docling.datamodel.pipeline_options import PipelineOptions
+from langchain_docling.loader import DoclingLoader, ExportType
 from langchain_ollama import ChatOllama
-from langchain_docling.loader import DoclingLoader
+from langgraph.graph import END, StateGraph
+from langchain_community.document_loaders import PDFPlumberLoader
 
 #%%
 ################################ Configuration & Setup ################################
 
 load_dotenv()
-
-# Streamlit's file watcher can trip over torch.classes if it is present in the
-# # environment; remove any eagerly imported torch modules so the watcher skips it.
-# for _mod in [m for m in list(sys.modules) if m.startswith("torch")]:
-#     sys.modules.pop(_mod, None)
 
 # Define model parameters and connection strings
 llm_model = "gpt-oss:20b"  # Using a lightweight model
@@ -146,16 +142,12 @@ def load_doc(uploaded_file):
         tmp_file.write(uploaded_file.getvalue())
         tmp_path = tmp_file.name
 
-    text = ""
-    # Select appropriate loader based on file extension
-
-    if uploaded_file.name.endswith(".pdf"):
-        with pdfplumber.open(tmp_path) as pdf:
-            pages = [page.extract_text() or "" for page in pdf.pages]
-            text = "\n".join(pages)
-    else:  # Text file
-        with open(tmp_path, "r") as f:
-            text = f.read()
+    loader = DoclingLoader(
+        file_path=tmp_path,
+        export_type=ExportType.MARKDOWN,
+    )
+    docs = loader.load()
+    text = "\n\n".join(doc.page_content or "" for doc in docs)
 
     # Ensure cleanup of the temporary file after processing
     os.remove(tmp_path)
