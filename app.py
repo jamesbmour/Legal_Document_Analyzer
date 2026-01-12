@@ -204,8 +204,7 @@ def analyze_document(doc_text):
 def main():
     st.set_page_config(page_title="Legal Doc Analyzer", layout="wide")
 
-    with st.expander("Session State"):
-        st.write(st.session_state)
+
 
 
     # Configure the sidebar for file uploads
@@ -221,6 +220,8 @@ def main():
     st.markdown(
         "Upload a contract or legal document to get an instant AI-powered analysis."
     )
+    with st.expander("Session State"):
+        st.json(st.session_state, expanded=False)
 
     # Trigger processing only when a file exists and the button is clicked
     if uploaded_file and st.button("Analyze Document"):
