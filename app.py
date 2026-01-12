@@ -9,6 +9,7 @@ import pdfplumber
 import streamlit as st
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
+from langchain_ollama import ChatOllama
 
 #%%
 ################################ Configuration & Setup ################################
