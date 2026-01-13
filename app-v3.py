@@ -48,14 +48,7 @@ class AgentState(TypedDict, total=False):
 
 
 def file_hash(data: bytes) -> str:
-    """ Generate a SHA256 hash for the given binary data.
-
-    Args:
-        data (bytes): _description_
-
-    Returns:
-        str: _description_
-    """
+    """Generate a SHA256 hash for the given binary data. This hash is used to uniquely identify uploaded files for caching analysis results, preventing redundant processing of the same document."""
     # Generate a SHA256 hash for given binary data
     return hashlib.sha256(data).hexdigest()
 
@@ -207,6 +200,36 @@ def analyze_document(doc_text: str) -> Dict[str, Any]:
 
 ################################ Streamlit Application ################################
 
+def render_sidebar_inputs():
+    """Render sidebar with file upload and model settings."""
+    st.header("Upload Document")
+    result = st.file_uploader("Upload Legal Document (PDF or TXT)", type=["pdf", "txt"])
+
+    st.divider()
+    st.subheader("Model Settings")
+    st.session_state.model = st.text_input("Model", value=DEFAULT_MODEL)
+
+    return result
+
+def analyze_uploaded_file(uploaded_file, h):
+    """Process uploaded file and run AI analysis."""
+    prog = st.progress(0, text="Reading document...")
+    doc_text = load_doc(uploaded_file)
+
+    preview_lines = doc_text.splitlines()
+    preview_text = "\n".join(preview_lines[:30])
+    with st.expander("Document preview (first 30 lines)"):
+        st.markdown(preview_text or "[No content extracted]")
+
+    prog.progress(50, text="Running analysis agents...")
+    result = analyze_document(doc_text)
+
+    prog.progress(100, text="Done.")
+    st.session_state.results_by_hash[h] = result
+
+
+
+
 
 def display_analysis_results(h):
     """Display analysis results in organized tabs with download option."""
@@ -237,33 +260,6 @@ def display_analysis_results(h):
     )
 
 
-def analyze_uploaded_file(uploaded_file, h):
-    """Process uploaded file and run AI analysis."""
-    prog = st.progress(0, text="Reading document...")
-    doc_text = load_doc(uploaded_file)
-
-    preview_lines = doc_text.splitlines()
-    preview_text = "\n".join(preview_lines[:30])
-    with st.expander("Document preview (first 30 lines)"):
-        st.markdown(preview_text or "[No content extracted]")
-
-    prog.progress(50, text="Running analysis agents...")
-    result = analyze_document(doc_text)
-
-    prog.progress(100, text="Done.")
-    st.session_state.results_by_hash[h] = result
-
-
-def render_sidebar_inputs():
-    """Render sidebar with file upload and model settings."""
-    st.header("Upload Document")
-    result = st.file_uploader("Upload Legal Document (PDF or TXT)", type=["pdf", "txt"])
-
-    st.divider()
-    st.subheader("Model Settings")
-    st.session_state.model = st.text_input("Model", value=DEFAULT_MODEL)
-
-    return result
 
 
 def main():
