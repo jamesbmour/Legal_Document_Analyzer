@@ -10,12 +10,11 @@ from langchain_ollama import ChatOllama
 from langgraph.graph import END, StateGraph
 import pymupdf4llm
 
-################################ Configuration & Setup ################################
-
+################## Configuration & Setup ##################
 # Load environment variables from .env file
 load_dotenv()
 
-DEFAULT_MODEL = "granite4:1b"
+DEFAULT_MODEL = "llama3.2:1b"
 # Retrieve OLLAMA_BASE_URL from environment, default to localhost
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 SUMMARY_TEMPERATURE = 0.2
@@ -31,7 +30,7 @@ def ensure_session_defaults():
     st.session_state.setdefault("temp_risks", RISKS_TEMPERATURE)
     st.session_state.setdefault("temp_suggestions", SUGGESTIONS_TEMPERATURE)
 
-################################ Data Structures ################################
+################## Data Structures ###############
 
 
 class AgentState(TypedDict, total=False):
@@ -45,8 +44,7 @@ class AgentState(TypedDict, total=False):
     suggestions: str
     final_report: str
 
-
-################################ Core Utilities ################################
+#################### Core Utilities ###################
 
 
 def file_hash(data: bytes) -> str:
@@ -75,8 +73,7 @@ def call_ollama(prompt: str, model: str, base_url: str, temperature: float) -> s
     return (resp.content or "").strip()
 
 
-################################ AI Agent Nodes ################################
-
+######## AI Agent Nodes #######################
 
 def summarize_node(state: AgentState) -> Dict[str, Any]:
     """Generate executive summary of legal document."""
