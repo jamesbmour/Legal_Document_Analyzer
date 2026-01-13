@@ -1,16 +1,14 @@
 import os
 import tempfile
 from textwrap import dedent
-from typing import TypedDict
+from typing import TypedDict, List
 
 import streamlit as st
 from dotenv import load_dotenv
-from docling.document_converter import DocumentConverter
-from docling.datamodel.pipeline_options import PipelineOptions
-from langchain_docling.loader import DoclingLoader, ExportType
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, StateGraph
-from langchain_community.document_loaders import PDFPlumberLoader
+import pymupdf4llm
+from langchain_text_splitters import CharacterTextSplitter
 
 #%%
 ################################ Configuration & Setup ################################
@@ -18,7 +16,7 @@ from langchain_community.document_loaders import PDFPlumberLoader
 load_dotenv()
 
 # Define model parameters and connection strings
-llm_model = "gpt-oss:20b"  # Using a lightweight model
+llm_model = "granite4:350m"  # Using a lightweight model
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 MAX_INPUT_CHARS = 10_000  # Prevent overly long prompts
@@ -39,6 +37,23 @@ def call_ollama(prompt: str, temperature: float = 0.2) -> str:
 def clamp_text(text: str) -> str:
     """Limit the amount of text sent to the model to avoid context overflow."""
     return text if len(text) <= MAX_INPUT_CHARS else text[:MAX_INPUT_CHARS]
+
+
+def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
+    """
+    Split a large text into smaller, overlapping chunks.
+    Prepare text for map-reduce summarization to handle LLM context limits.
+    """
+    # Initialize a character-based text splitter
+    splitter = CharacterTextSplitter(
+        separator="\n\n",
+        chunk_size=chunk_size,
+        chunk_overlap=overlap,
+        length_function=len,
+        is_separator_regex=False,
+    )
+    # Split the document text into manageable chunks
+    return splitter.split_text(text)
 
 
 # Define the shared state schema for the LangGraph agents
@@ -134,25 +149,34 @@ def create_workflow():
 #%%
 ################################ Helper Functions ################################
 
-def load_doc(uploaded_file):
-    # Create a temporary file to store the upload for the LangChain loaders
-    with tempfile.NamedTemporaryFile(
-        delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}"
-    ) as tmp_file:
-        tmp_file.write(uploaded_file.getvalue())
-        tmp_path = tmp_file.name
+def load_doc(uploaded_file) -> str:
+    """
+    Load content from an uploaded document, supporting TXT and PDF formats.
+    Convert PDFs to markdown text using pymupdf4llm.
+    """
+    # Extract file extension to determine processing method
+    suffix = uploaded_file.name.split(".")[-1].lower()
+    data = uploaded_file.getvalue()
 
-    loader = DoclingLoader(
-        file_path=tmp_path,
-        export_type=ExportType.MARKDOWN,
-    )
-    docs = loader.load()
-    text = "\n\n".join(doc.page_content or "" for doc in docs)
+    # Handle plain text files directly
+    if suffix == "txt":
+        return data.decode("utf-8", errors="replace")
 
-    # Ensure cleanup of the temporary file after processing
-    os.remove(tmp_path)
+    tmp_path = None
+    # Process PDF files by converting them to markdown
+    try:
+        # Create a temporary file to store the uploaded PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
+            tmp.write(data)
+            tmp_path = tmp.name
 
-    return text
+        # Convert the temporary PDF file to markdown text
+        text = pymupdf4llm.to_markdown(tmp_path)
+        return text.strip()
+    finally:
+        # Ensure the temporary file is deleted after processing
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 def analyze_document(doc_text):
